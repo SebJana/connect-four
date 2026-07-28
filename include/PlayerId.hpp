@@ -5,3 +5,10 @@ enum class PlayerId : char
     First = 'X',
     Second = 'O'
 };
+
+enum class PlayerTypeId
+{
+    Human,
+    // Bot,
+    Random
+};

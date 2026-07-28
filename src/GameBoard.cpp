@@ -3,9 +3,13 @@
 GameBoard::GameBoard() = default;
 
 bool GameBoard::makeMove(PlayerId currentTurnPlayerId, int column){
+    if (!isPlayableColumn(column)){
+        return false;
+    }
+
     int moveIndex = getMoveBitIndex(column);
 
-    // -1 on full column or non-existent column,
+    // -1 on full column or non-existent column (redundantly),
     // second condition (redundantly) denies moveIndex to be on the sentinel row
     if(moveIndex < 0 || (moveIndex % columnStride == rowCount)){
         return false;
@@ -22,11 +26,6 @@ bool GameBoard::makeMove(PlayerId currentTurnPlayerId, int column){
 }
 
 int GameBoard::getMoveBitIndex(int column) const {
-    // desired column in bound?
-    if (column < 0 || column >= columnCount) {
-        return -1;
-    }
-
     // start with the lowest row index in the desired column
     const int columnStart = column * columnStride;
     // combine the boards to know all occupied cells
@@ -42,6 +41,7 @@ int GameBoard::getMoveBitIndex(int column) const {
     }
     // if no valid index was found in that column,
     // that means that column is already full and not playable
+    // (should be a redundant fallback after prior check of desired column)
     return -1;
 }
 
@@ -65,6 +65,36 @@ void GameBoard::toggleBitValue(uint64_t& playerBoard, int index) {
 // does not check or enforce the index being in bounds
 int GameBoard::getCellIndex(int column, int row) const {
     return column * columnStride + row;
+}
+
+// Only use this in RandomPlayer and HumanPlayer,
+// the Solver should use the faster operation
+std::vector<int> GameBoard::playableColumns() const{
+    std::vector<int> playableColumns{};
+    const uint64_t fullBoard = boardPlayerOne | boardPlayerTwo;
+
+    // Loop over all columns and check their top row element
+    for(int currCol = 0; currCol < columnCount; ++currCol){
+        const uint8_t topRowIndex = (rowCount - 1) + (currCol * columnStride);
+        if(!getBitValue(fullBoard, topRowIndex)){
+            playableColumns.push_back(currCol);
+        }
+    }
+
+    return playableColumns;
+
+}
+
+bool GameBoard::isPlayableColumn(int column) const {
+    if (column < 0 || column >= columnCount){
+        return false;
+    }
+    const std::uint64_t occupied =
+            boardPlayerOne | boardPlayerTwo;
+
+    const uint8_t idx = (rowCount - 1) + column * columnStride;
+    // invert the bit value to signal playable (1) when no stone (0)
+    return !getBitValue(occupied,idx);
 }
 
 std::string GameBoard::toString() const {

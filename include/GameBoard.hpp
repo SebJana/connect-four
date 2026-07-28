@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 #include "PlayerId.hpp"
 
 class GameBoard
@@ -9,7 +10,13 @@ class GameBoard
 public:
     GameBoard();
 
+    static const uint8_t columnCount = 7;
+    static const uint8_t rowCount = 6;
+    static const uint8_t columnStride = 7; // 6 row cells per column + 1 sentinel
+
     bool makeMove(PlayerId playerId, int column);
+    std::vector<int> playableColumns() const;
+    bool isPlayableColumn(int column) const;
 
     std::string toString() const;
     uint64_t getBoardPlayerOne() const;
@@ -37,9 +44,6 @@ private:
     //
     // Bit index = column * columnStride + row
     // row: 0 = bottom, 5 = top playable, 6 = sentinel
-    static const uint8_t columnCount = 7;
-    static const uint8_t rowCount = 6;
-    static const uint8_t columnStride = 7; // 6 row cells per column + 1 sentinel
 
     // init boards with all zeroes, meaning no stones played yet
     uint64_t boardPlayerOne = 0;

@@ -1,82 +1,102 @@
 #include <iostream>
+#include <array>
 #include <random>
-#include <vector>
-#include <chrono>
-#include <thread>
 
 #include "GameBoard.hpp"
-#include "PlayerId.hpp"
+#include "Player.hpp"
+#include "HumanPlayer.hpp"
+#include "RandomPlayer.hpp"
 
-int main()
-{
+bool showBoard = true;
+bool showMoveLog = true;
+
+int main() {
     GameBoard board;
 
-    std::random_device randomDevice;
-    std::mt19937 randomGenerator(randomDevice());
+    HumanPlayer p1(PlayerId::First);
+    RandomPlayer p2(PlayerId::Second);
 
-    PlayerId currentPlayer = PlayerId::First;
+    // pick starting player at random
+    std::array<Player*, 2> players{
+            &p1,
+            &p2
+    };
+
+    std::random_device randomDevice;
+    std::mt19937 randomEngine(randomDevice());
+
+    std::uniform_int_distribution<int> startingPlayerDistribution(0, 1);
+
+    Player* currentPlayer =
+            players[startingPlayerDistribution(randomEngine)];
+
+    // Only show board before move when HumanPlayer starts
+    if(currentPlayer->getPlayerTypeId()==PlayerTypeId::Human && showBoard){
+        std::cout << board.toString() << '\n';
+    }
 
     while (true) {
-        std::vector<int> playableColumns;
+        const int selectedColumn =
+                currentPlayer->getMove(board);
 
-        // Find every column in which a move can currently be made.
-        for (int column = 0; column < 7; ++column) {
-            playableColumns.push_back(column);
-        }
-
-        if (playableColumns.empty()) {
+        if (selectedColumn == -1) {
             std::cout << "No playable columns remain.\n";
             break;
         }
 
-        std::uniform_int_distribution<std::size_t> distribution(
-                0,
-                playableColumns.size() - 1
+        const PlayerId currentPlayerId =
+                currentPlayer->getPlayerId();
+
+        const bool moveSuccessful = board.makeMove(
+                currentPlayerId,
+                selectedColumn
         );
 
-        bool moveSuccessful = false;
-        int selectedColumn;
-
-        // Retry until a non-full column is selected.
-        while (!moveSuccessful) {
-            selectedColumn = playableColumns[distribution(randomGenerator)];
-
-            moveSuccessful = board.makeMove(
-                    currentPlayer,
-                    selectedColumn
-            );
+        if (!moveSuccessful) {
+            std::cout << "The selected move was invalid.\n";
+            continue;
         }
 
-        std::cout
-                << "Player "
-                << static_cast<char>(currentPlayer)
-                << " played column "
-                << selectedColumn
-                << "\n\n";
-
-        std::cout << board.toString() << '\n';
-
-        if (board.hasWon(currentPlayer)) {
+        if (showMoveLog){
             std::cout
                     << "Player "
-                    << static_cast<char>(currentPlayer)
+                    << static_cast<char>(currentPlayerId)
+                    << " played column "
+                    << selectedColumn
+                    << "\n\n";
+        }
+        if (showBoard) {
+            std::cout << board.toString() << '\n';
+        }
+
+        if (board.hasWon(currentPlayerId)) {
+            // Show board once after game ends, after it was hidden during
+            if(!showBoard){
+                std::cout << board.toString() << '\n';
+            }
+            std::cout
+                    << "Player "
+                    << static_cast<char>(currentPlayerId)
                     << " has won!\n";
 
             break;
         }
 
         if (board.hasDraw()) {
+            // Show board once after game ends, after it was hidden during
+            if(!showBoard){
+                std::cout << board.toString() << '\n';
+            }
             std::cout << "The game is a draw.\n";
             break;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(750));
-
-        // Alternate the active player.
-        currentPlayer =
-                currentPlayer == PlayerId::First
-                ? PlayerId::Second
-                : PlayerId::First;
+        // Swap current player after each turn
+        if (currentPlayer == &p1) {
+            currentPlayer = &p2;
+        } else {
+            currentPlayer = &p1;
+        }
     }
 
     return 0;
