@@ -25,6 +25,31 @@ bool GameBoard::makeMove(PlayerId currentTurnPlayerId, int column){
     return true;
 }
 
+// Assumes top stone in the given column belongs to currentTurnPlayerId
+bool GameBoard::undoMove(PlayerId currentTurnPlayerId, int column){
+    if (column < 0 || column >= columnCount){
+        return false;
+    }
+
+    int moveIndex = getUndoMoveBitIndex(column);
+
+    // -1 on empty column or non-existent column (redundantly),
+    // second condition (redundantly) denies moveIndex to be on the sentinel row
+    if(moveIndex < 0 || (moveIndex % columnStride == rowCount)){
+        return false;
+    }
+
+    if(currentTurnPlayerId == PlayerId::First){
+        toggleBitValue(boardPlayerOne, moveIndex);
+    } else {
+        toggleBitValue(boardPlayerTwo, moveIndex);
+    }
+
+    // After removing one played stone, decrease the counter
+    moveCounter--;
+    return true;
+}
+
 int GameBoard::getMoveBitIndex(int column) const {
     // start with the lowest row index in the desired column
     const int columnStart = column * columnStride;
@@ -36,6 +61,26 @@ int GameBoard::getMoveBitIndex(int column) const {
         const int bitIndex = columnStart + row;
 
         if (!getBitValue(occupied, bitIndex)){
+            return bitIndex;
+        }
+    }
+    // if no valid index was found in that column,
+    // that means that column is already full and not playable
+    // (should be a redundant fallback after prior check of desired column)
+    return -1;
+}
+
+int GameBoard::getUndoMoveBitIndex(int column) const {
+    // start with the top row index in the desired column
+    const int columnStart = column * columnStride;
+    // combine the boards to know all occupied cells
+    const uint64_t occupied = boardPlayerOne | boardPlayerTwo;
+
+    for (int row = rowCount - 1; row >= 0; --row) {
+        // iterate from top down to find first occupied slot
+        const int bitIndex = columnStart + row;
+
+        if (getBitValue(occupied, bitIndex)){
             return bitIndex;
         }
     }

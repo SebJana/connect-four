@@ -6,6 +6,7 @@
 #include "Player.hpp"
 #include "HumanPlayer.hpp"
 #include "RandomPlayer.hpp"
+#include "BotPlayer.hpp"
 
 bool showBoard = true;
 bool showMoveLog = true;
@@ -13,8 +14,8 @@ bool showMoveLog = true;
 int main() {
     GameBoard board;
 
-    HumanPlayer p1(PlayerId::First);
-    RandomPlayer p2(PlayerId::Second);
+    RandomPlayer p1(PlayerId::First);
+    BotPlayer p2(PlayerId::Second);
 
     // pick starting player at random
     std::array<Player*, 2> players{
@@ -36,8 +37,11 @@ int main() {
     }
 
     while (true) {
+        Player* current = &p1;
+        Player* opponent = &p2;
+
         const int selectedColumn =
-                currentPlayer->getMove(board);
+                currentPlayer->getMove(board, *current, *opponent);
 
         if (selectedColumn == -1) {
             std::cout << "No playable columns remain.\n";

@@ -9,6 +9,6 @@ enum class PlayerId : char
 enum class PlayerTypeId
 {
     Human,
-    // Bot,
+    Bot,
     Random
 };

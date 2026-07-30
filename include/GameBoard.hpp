@@ -14,7 +14,8 @@ public:
     static const uint8_t rowCount = 6;
     static const uint8_t columnStride = 7; // 6 row cells per column + 1 sentinel
 
-    bool makeMove(PlayerId playerId, int column);
+    bool makeMove(PlayerId currentTurnPlayerId, int column);
+    bool undoMove(PlayerId currentTurnPlayerId, int column);
     std::vector<int> playableColumns() const;
     bool isPlayableColumn(int column) const;
 
@@ -52,6 +53,7 @@ private:
     uint64_t moveCounter = 0;
 
     int getMoveBitIndex(int column) const;
+    int getUndoMoveBitIndex(int column) const;
     bool getBitValue(uint64_t playerBoard, int index) const;
     void toggleBitValue(uint64_t& playerBoard, int index);
     int getCellIndex(int column, int row) const;

@@ -8,7 +8,7 @@ HumanPlayer::HumanPlayer(PlayerId playerId)
 {
 }
 
-int HumanPlayer::getMove(const GameBoard& board) {
+int HumanPlayer::getMove(const GameBoard& board, const Player& current, const Player& opponent) {
     const auto playable = board.playableColumns();
 
     // No valid moves left

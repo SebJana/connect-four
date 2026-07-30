@@ -9,5 +9,5 @@ class HumanPlayer final : public Player
 public:
     explicit HumanPlayer(PlayerId playerId);
 
-    int getMove(const GameBoard& board) override;
+    int getMove(const GameBoard& board, const Player& current, const Player& opponent) override;
 };

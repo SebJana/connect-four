@@ -11,6 +11,7 @@ add_executable(connect_four
         src/GameBoard.cpp
         src/RandomPlayer.cpp
         src/HumanPlayer.cpp
+        src/BotPlayer.cpp
 )
 
 target_include_directories(connect_four PRIVATE

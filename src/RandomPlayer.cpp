@@ -9,7 +9,7 @@ RandomPlayer::RandomPlayer(PlayerId playerId)
 {
 }
 
-int RandomPlayer::getMove(const GameBoard& board) {
+int RandomPlayer::getMove(const GameBoard& board, const Player& current, const Player& opponent) {
     const auto playable = board.playableColumns();
     const std::size_t playableCount = playable.size();
 

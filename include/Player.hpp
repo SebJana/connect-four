@@ -15,7 +15,7 @@ public:
 
     virtual ~Player() = default;
 
-    virtual int getMove(const GameBoard& board) = 0;
+    virtual int getMove(const GameBoard& board, const Player& current, const Player& opponent) = 0;
 
     PlayerId getPlayerId() const
     {
