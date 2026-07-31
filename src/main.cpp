@@ -14,7 +14,7 @@ bool showMoveLog = true;
 int main() {
     GameBoard board;
 
-    RandomPlayer p1(PlayerId::First);
+    HumanPlayer p1(PlayerId::First);
     BotPlayer p2(PlayerId::Second);
 
     // pick starting player at random

@@ -142,6 +142,17 @@ bool GameBoard::isPlayableColumn(int column) const {
     return !getBitValue(occupied,idx);
 }
 
+// Leading player is not the player who is more likely to win,
+// but simply the player whose bitboard is stored in p1.
+// The p1 and p2 bitboards are hashed in this fixed order.
+BoardKey GameBoard::getBoardKey(PlayerId leadingPlayer) const {
+    if (leadingPlayer == PlayerId::First) {
+        return {boardPlayerOne, boardPlayerTwo};
+    }
+
+    return {boardPlayerTwo, boardPlayerOne};
+}
+
 std::string GameBoard::toString() const {
     std::string output;
     for(int colNum = 0; colNum < columnCount; ++colNum){
@@ -219,12 +230,4 @@ bool GameBoard::hasAscendingDiagonalWin(uint64_t playerBoard) const {
 bool GameBoard::hasDescendingDiagonalWin(uint64_t playerBoard) const {
     const uint64_t pairs = playerBoard & (playerBoard >> (columnStride + 1));
     return (pairs & (pairs >> (2 * (columnStride + 1)))) != 0;
-}
-
-uint64_t GameBoard::getBoardPlayerOne() const {
-    return boardPlayerOne;
-}
-
-uint64_t GameBoard::getBoardPlayerTwo() const {
-    return boardPlayerTwo;
 }

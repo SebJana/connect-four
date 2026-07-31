@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <unordered_map>
 #include "GameBoard.hpp"
 #include "Player.hpp"
 
@@ -12,10 +13,34 @@ public:
     int getMove(const GameBoard& board, const Player& current, const Player& opponent) override;
 
 private:
-    const int searchDepth = 13;
+    const int searchDepth = 17;
     const int winScore = 99'999;
     int negamax(GameBoard& board, const Player &current, const Player &opponent, int depth, int alpha, int beta);
     int heuristic(GameBoard& board, const Player &current, const Player &opponent, int depth);
+
+    // Stores whether the node was fully searched (EXACT)
+    // or only partially searched due to alpha-beta pruning.
+    // LOWER_BOUND: beta cutoff, score is at least this value.
+    // UPPER_BOUND: alpha cutoff/fail-low, score is at most this value.
+    // NO_ENTRY: used to signal the lookup not finding any result in the table.
+    enum NodeType {
+        EXACT,
+        LOWER_BOUND,
+        UPPER_BOUND,
+        NO_ENTRY
+    };
+
+    struct TTableEntry {
+        int score; // Score as seen from the current player
+        int depth; // Search depth this entry explored to
+        NodeType type;
+    };
+
+    std::unordered_map<BoardKey, TTableEntry, BoardKeyHash> transpositionTable;
+
+    BoardKey getTTableKey(GameBoard& board, const Player &current, const Player &opponent);
+    void saveToTTable(GameBoard& board, const Player &current, const Player &opponent, int score, int depth, NodeType type);
+    TTableEntry getTTableEntry(GameBoard& board, const Player &current, const Player &opponent);
 
     const int moveOrder[7] = {4,3,2,5,1,0,6};
     uint64_t boardsEvaluated = 0;

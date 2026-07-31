@@ -5,6 +5,35 @@
 #include <vector>
 #include "PlayerId.hpp"
 
+// Representation of the board and its hash for lookup tables
+struct BoardKey {
+    uint64_t p1;
+    uint64_t p2;
+
+    // Overload the == operator to check if two boards are equal
+    bool operator==(const BoardKey& other) const {
+        return p1 == other.p1 && p2 == other.p2;
+    }
+
+    // Check which board is smaller
+    bool operator<(const BoardKey& other) const {
+        if (p1 != other.p1)
+            return p1 < other.p1;
+
+        return p2 < other.p2;
+    }
+
+};
+
+struct BoardKeyHash {
+    size_t operator()(const BoardKey& key) const {
+        // Mix the two bitboards into a single hash value.
+        // The multiplication spreads the bits of p2 to reduce collisions
+        // before combining it with p1 using XOR.
+        return key.p1 ^ (key.p2 * 0x9e3779b97f4a7c15ULL);
+    }
+};
+
 class GameBoard
 {
 public:
@@ -20,8 +49,7 @@ public:
     bool isPlayableColumn(int column) const;
 
     std::string toString() const;
-    uint64_t getBoardPlayerOne() const;
-    uint64_t getBoardPlayerTwo() const;
+    BoardKey getBoardKey(PlayerId leadingPlayer) const;
 
     bool hasWon(PlayerId currentTurnPlayerId) const;
     bool hasDraw() const;
