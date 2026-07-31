@@ -37,11 +37,12 @@ int main() {
     }
 
     while (true) {
-        Player* current = &p1;
-        Player* opponent = &p2;
+        Player* opponentPlayer = currentPlayer == players[0]
+                                 ? players[1]
+                                 : players[0];
 
         const int selectedColumn =
-                currentPlayer->getMove(board, *current, *opponent);
+                currentPlayer->getMove(board, *currentPlayer, *opponentPlayer);
 
         if (selectedColumn == -1) {
             std::cout << "No playable columns remain.\n";

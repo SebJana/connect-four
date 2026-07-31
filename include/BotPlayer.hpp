@@ -31,16 +31,18 @@ private:
     };
 
     struct TTableEntry {
-        int score; // Score as seen from the current player
+        int score; // Current-player score, normalized for table storage
         int depth; // Search depth this entry explored to
         NodeType type;
     };
 
     std::unordered_map<BoardKey, TTableEntry, BoardKeyHash> transpositionTable;
 
-    BoardKey getTTableKey(GameBoard& board, const Player &current, const Player &opponent);
-    void saveToTTable(GameBoard& board, const Player &current, const Player &opponent, int score, int depth, NodeType type);
-    TTableEntry getTTableEntry(GameBoard& board, const Player &current, const Player &opponent);
+    BoardKey getTTableKey(const GameBoard& board, const Player &current) const;
+    void saveToTTable(const GameBoard& board, const Player &current, int score, int depth, NodeType type);
+    TTableEntry getTTableEntry(const GameBoard& board, const Player &current) const;
+    int normalizeTTableScore(int score, int depth) const;
+    int restoreTTableScore(int score, int depth) const;
 
     const int moveOrder[7] = {4,3,2,5,1,0,6};
     uint64_t boardsEvaluated = 0;

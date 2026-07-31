@@ -36,7 +36,8 @@ int BotPlayer::getMove(const GameBoard& board, const Player& current, const Play
             continue;
         }
         mutableBoard.makeMove(current.getPlayerId(), startColumn);
-        int score = -negamax(mutableBoard, opponent, current, searchDepth - 1, alpha, beta);
+        int score = -negamax(mutableBoard, opponent, current,
+                             searchDepth - 1, -beta, -alpha);
         mutableBoard.undoMove(current.getPlayerId(), startColumn);
 
         // Check if starting with that column produced a new best score
@@ -83,18 +84,19 @@ int BotPlayer::negamax(
         int beta)
 {
     nodesSearched++;
-    // Keep the original alpha/beta, so the node type can be determined
+    // Keep the original alpha, so the node type can be determined
     // (EXACT, LOWER_BOUND or UPPER_BOUND) before storing
     const int alphaOriginal = alpha;
-    const int originalBeta = beta;
 
-    TTableEntry entry = getTTableEntry(board, current, opponent);
+    TTableEntry entry = getTTableEntry(board, current);
 
     // Only use the stored score/bounds if this entry was searched
     // at least as deeply as the current requested search
     if (entry.type != NodeType::NO_ENTRY &&
         entry.depth >= depth)
     {
+        entry.score = restoreTTableScore(entry.score, depth);
+
         switch (entry.type) {
             case NodeType::EXACT:
                 // The stored score is the exact value
@@ -128,19 +130,19 @@ int BotPlayer::negamax(
     if(board.hasWon(opponent.getPlayerId())){
         boardsEvaluated++;
         int score = -winScore - depth; // faster win is worth more
-        saveToTTable(board, current, opponent, -score, depth, NodeType::EXACT);
+        saveToTTable(board, current, score, depth, NodeType::EXACT);
         return score; // faster win is worth more
     }
     if(board.hasDraw()){
         boardsEvaluated++;
         int score = 0; // draw is the exact neutral score
-        saveToTTable(board, current, opponent, score, depth, NodeType::EXACT);
+        saveToTTable(board, current, score, depth, NodeType::EXACT);
         return score;
     }
     if(depth == 0){
         boardsEvaluated++;
         int score = heuristic(board, current, opponent, depth);
-        saveToTTable(board, current, opponent, -score, depth, NodeType::EXACT);
+        saveToTTable(board, current, score, depth, NodeType::EXACT);
         return score;
     }
 
@@ -158,19 +160,19 @@ int BotPlayer::negamax(
 
         // End early if that branch is worse than an already seen one
         if(alpha >= beta){
-            saveToTTable(board, current, opponent, -score, depth, NodeType::LOWER_BOUND);
+            saveToTTable(board, current, score, depth, NodeType::LOWER_BOUND);
             return score;
         }
     }
 
     // If alpha never increased, this node failed low.
     if (score <= alphaOriginal) {
-        saveToTTable(board, current, opponent,
+        saveToTTable(board, current,
                      score, depth, NodeType::UPPER_BOUND);
     }
     else {
-        // Otherwise we know the exact minimax value.
-        saveToTTable(board, current, opponent,
+        // Otherwise the exact minimax value is known.
+        saveToTTable(board, current,
                      score, depth, NodeType::EXACT);
     }
 
@@ -178,27 +180,20 @@ int BotPlayer::negamax(
 }
 
 BoardKey BotPlayer::getTTableKey(
-        GameBoard& board,
-        const Player &current,
-        const Player &opponent)
+        const GameBoard& board,
+        const Player &current) const
 {
+    // Always store the current player's board first,
+    // so swapping player colors still produces the same representation.
     // TODO implement mirror symmetry over the middle column here
-    BoardKey currentLeadingKey = board.getBoardKey(current.getPlayerId());
-    BoardKey opponentLeadingKey = board.getBoardKey(opponent.getPlayerId());
-
-    // for all lookups and inserts use the smaller representation
-    if(currentLeadingKey < opponentLeadingKey){
-        return currentLeadingKey;
-    }
-    return opponentLeadingKey;
+    return board.getBoardKey(current.getPlayerId());
 }
 
 BotPlayer::TTableEntry BotPlayer::getTTableEntry(
-        GameBoard& board,
-        const Player& current,
-        const Player& opponent)
+        const GameBoard& board,
+        const Player& current) const
 {
-    BoardKey key = getTTableKey(board, current, opponent);
+    BoardKey key = getTTableKey(board, current);
 
     auto it = transpositionTable.find(key);
 
@@ -207,19 +202,59 @@ BotPlayer::TTableEntry BotPlayer::getTTableEntry(
     }
 
     // Signal no result found
-    return { -1, -1, NO_ENTRY };
+    return { 0, -1, NO_ENTRY };
 }
 void BotPlayer::saveToTTable(
-        GameBoard& board,
+        const GameBoard& board,
         const Player &current,
-        const Player &opponent,
         int score,
         int depth,
         NodeType type)
 {
-    BoardKey key = getTTableKey(board, current, opponent);
-    TTableEntry entry = {score, depth, type};
-    transpositionTable[key] = entry;
+    BoardKey key = getTTableKey(board, current);
+    TTableEntry entry = {
+            normalizeTTableScore(score, depth),
+            depth,
+            type
+    };
+
+    // Keep deeper entries and prefer exact entries at the same depth.
+    auto existing = transpositionTable.find(key);
+    if (existing == transpositionTable.end() ||
+        depth > existing->second.depth ||
+        (depth == existing->second.depth &&
+         (type == NodeType::EXACT || existing->second.type != NodeType::EXACT)))
+    {
+        transpositionTable[key] = entry;
+    }
+}
+
+int BotPlayer::normalizeTTableScore(int score, int depth) const {
+    // Remove the remaining-depth bonus before storing,
+    // so the same position keeps the same mate score at different depths.
+    const int mateScoreThreshold = winScore - searchDepth;
+    if (score >= mateScoreThreshold) {
+        return score - depth;
+    }
+    if (score <= -mateScoreThreshold) {
+        return score + depth;
+    }
+    return score;
+}
+
+int BotPlayer::restoreTTableScore(
+        int score,
+        int depth) const
+{
+    // Add the remaining-depth bonus back for the current search.
+    const int mateScoreThreshold = winScore - searchDepth;
+    if (score >= mateScoreThreshold) {
+        return score + depth;
+    }
+    if (score <= -mateScoreThreshold) {
+        return score - depth;
+    }
+    return score;
 }
 
 int BotPlayer::heuristic(
