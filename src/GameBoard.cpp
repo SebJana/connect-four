@@ -1,5 +1,7 @@
 #include "GameBoard.hpp"
 
+// TODO add proper testing for all these methods
+
 GameBoard::GameBoard() = default;
 
 bool GameBoard::makeMove(PlayerId currentTurnPlayerId, int column){
@@ -151,6 +153,46 @@ BoardKey GameBoard::getBoardKey(PlayerId leadingPlayer) const {
     }
 
     return {boardPlayerTwo, boardPlayerOne};
+}
+
+// Leading player is not the player who is more likely to win,
+// but simply the player whose bitboard is stored in p1.
+// The p1 and p2 bitboards are hashed in this fixed order.
+BoardKey GameBoard::getMirroredBoardKey(PlayerId leadingPlayer) const {
+    uint64_t mirroredPlayerOneBoard = getMirroredBoard(boardPlayerOne);
+    uint64_t mirroredPlayerTwoBoard = getMirroredBoard(boardPlayerTwo);
+
+    if (leadingPlayer == PlayerId::First) {
+        return {mirroredPlayerOneBoard, mirroredPlayerTwoBoard};
+    }
+
+    return {mirroredPlayerTwoBoard, mirroredPlayerOneBoard};
+}
+
+uint64_t GameBoard::getMirroredBoard(uint64_t board) const {
+    uint64_t mirrored = 0;
+    for(int column = 0; column < columnCount; ++column){
+        // Mirror the column index around the center column:
+        // column 0 -> 6, column 1 -> 5, etc.
+        const int mirroredColumn = columnCount - 1 - column;
+
+        // Move the current column's seven bits to the lowest positions.
+        // Each column occupies columnStride consecutive bits:
+        // column 0 starts at bit 0, column 1 starts at bit 7, etc.
+
+        // Creates a mask with columnStride set bits.
+        // For columnStride == 7, this is binary 1111111 (0x7F).
+        const uint64_t columnMask = (1ULL << columnStride) - 1ULL;
+
+        // Shift the selected column down to the lowest bits,
+        // then keep only the bits belonging to that column.
+        const uint64_t columnBits = (board >> (column * columnStride)) & columnMask;
+
+        // Shift the extracted column into its mirrored position
+        // and add it to the resulting mirrored board.
+        mirrored |= columnBits << (mirroredColumn * columnStride);
+    }
+    return mirrored;
 }
 
 std::string GameBoard::toString() const {

@@ -50,6 +50,7 @@ public:
 
     std::string toString() const;
     BoardKey getBoardKey(PlayerId leadingPlayer) const;
+    BoardKey getMirroredBoardKey(PlayerId leadingPlayer) const;
 
     bool hasWon(PlayerId currentTurnPlayerId) const;
     bool hasDraw() const;
@@ -88,6 +89,8 @@ private:
 
     uint64_t getPlayerBoard(PlayerId playerId) const;
     char getPlayerSymbol(PlayerId playerId) const;
+
+    uint64_t getMirroredBoard(uint64_t board) const;
 
     bool hasVerticalWin(uint64_t playerBoard) const;
     bool hasHorizontalWin(uint64_t playerBoard) const;

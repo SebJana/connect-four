@@ -13,7 +13,7 @@ public:
     int getMove(const GameBoard& board, const Player& current, const Player& opponent) override;
 
 private:
-    const int searchDepth = 17;
+    const int searchDepth = 15;
     const int winScore = 99'999;
     int negamax(GameBoard& board, const Player &current, const Player &opponent, int depth, int alpha, int beta);
     int heuristic(GameBoard& board, const Player &current, const Player &opponent, int depth);
@@ -36,6 +36,7 @@ private:
         NodeType type;
     };
 
+    // TODO rework to fixed size and keeping deeper entries over shallow ones (vector with hash lookup?)
     std::unordered_map<BoardKey, TTableEntry, BoardKeyHash> transpositionTable;
 
     BoardKey getTTableKey(const GameBoard& board, const Player &current) const;
@@ -44,7 +45,7 @@ private:
     int normalizeTTableScore(int score, int depth) const;
     int restoreTTableScore(int score, int depth) const;
 
-    const int moveOrder[7] = {4,3,2,5,1,0,6};
+    const int moveOrder[7] = {3,4,2,5,1,6,0};
     uint64_t boardsEvaluated = 0;
     uint64_t nodesSearched = 0;
 };

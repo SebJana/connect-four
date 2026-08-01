@@ -61,7 +61,7 @@ int BotPlayer::getMove(const GameBoard& board, const Player& current, const Play
     } else if (us >= 1'000.0) {
         std::cout << (us / 1'000.0) << " ms\n";
     } else {
-        std::cout << us << " µs\n";
+        std::cout << us << " us\n";
     }
 
     std::cout << "Boards searched: "
@@ -185,8 +185,15 @@ BoardKey BotPlayer::getTTableKey(
 {
     // Always store the current player's board first,
     // so swapping player colors still produces the same representation.
-    // TODO implement mirror symmetry over the middle column here
-    return board.getBoardKey(current.getPlayerId());
+    // Get both the regular board key and the one belonging to the board mirrored
+    // over the center column; always save the smaller of the two keys
+    BoardKey key = board.getBoardKey(current.getPlayerId());
+    BoardKey mirroredKey = board.getMirroredBoardKey(current.getPlayerId());
+
+    if(mirroredKey < key){
+        return mirroredKey;
+    }
+    return key;
 }
 
 BotPlayer::TTableEntry BotPlayer::getTTableEntry(
@@ -212,6 +219,7 @@ void BotPlayer::saveToTTable(
         NodeType type)
 {
     BoardKey key = getTTableKey(board, current);
+    // TODO save int bestMove for better move ordering
     TTableEntry entry = {
             normalizeTTableScore(score, depth),
             depth,
@@ -263,7 +271,9 @@ int BotPlayer::heuristic(
         const Player &opponent,
         int depth)
 {
-    // TODO implement actual heuristic (for now) that checks 3 in a row with a space
+    // TODO implement actual heuristic (for now) that checks 3 in a row with a space + (already block under space or two)
+    // same for 2 in a row with 2 spaces, then how "centerish" the pieces are stacked
+
     // (even more valuable when directly playable), 2 in a row with spaces
     // both for current and opponent with different signs, to also avoid opponent building a trap
     return 0;
